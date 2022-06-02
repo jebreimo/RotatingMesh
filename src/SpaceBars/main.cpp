@@ -36,6 +36,21 @@ void add_cube(Tungsten::ArrayBuffer<Point>& buffer)
     add_face(buffer, {-1, 0, 0}, {0, 0, 1}, {0, -1, 0}, {0.9, 0.7, 0.4});
 }
 
+struct Foo
+{
+    uint32_t timestamp = 0;
+    float base = 0;
+    float factor = 0;
+
+    [[nodiscard]]
+    constexpr float value(uint32_t timestamp) const
+    {
+        auto delta = float(timestamp - this->timestamp);
+        auto value = delta * factor + base;
+        return std::max(0.0f, std::min(1.0f, value));
+    }
+};
+
 class SpaceBarLoop : public Tungsten::EventLoop
 {
 public:
@@ -67,15 +82,36 @@ public:
         glEnable(GL_DEPTH_TEST);
     }
 
-    static constexpr int N = 3;
+    bool on_event(Tungsten::SdlApplication& app, const SDL_Event& event) override
+    {
+        if (event.type != SDL_KEYDOWN && event.type != SDL_KEYUP)
+            return false;
+        if (event.key.keysym.sym != SDLK_SPACE)
+            return false;
+
+        if (event.type == SDL_KEYDOWN && !event.key.repeat)
+        {
+            foo_ = {event.key.timestamp,
+                    foo_.value(event.key.timestamp),
+                    0.0002f};
+        }
+        else if (event.type == SDL_KEYUP)
+        {
+            foo_ = {event.key.timestamp,
+                    foo_.value(event.key.timestamp),
+                    -0.0006f};
+        }
+
+        return EventLoop::on_event(app, event);
+    }
 
     void on_draw(Tungsten::SdlApplication& app) override
     {
-        auto viewMat = Xyz::scale4<float>(1.0f, app.aspect_ratio(), 1.0f)
-                       * Xyz::make_frustum_matrix<float>(-2, 2, -2, 2, 2, 20)
-                       * Xyz::make_look_at_matrix(Xyz::make_vector3<float>(-4, -4, 1.5),
-                                                  Xyz::make_vector3<float>(-0.5, 0, 0),
-                                                  Xyz::make_vector3<float>(0, 0, 1));
+        auto view_mat = Xyz::scale4<float>(1.0f, app.aspect_ratio(), 1.0f)
+                        * Xyz::make_frustum_matrix<float>(-2, 2, -2, 2, 2, 20)
+                        * Xyz::make_look_at_matrix(Xyz::make_vector3<float>(-4, -4, 2.5),
+                                                   Xyz::make_vector3<float>(0, 0, 0),
+                                                   Xyz::make_vector3<float>(0, 0, 1));
 
         auto angle = Xyz::to_radians(float(SDL_GetTicks() / 10.0));
 
@@ -84,25 +120,15 @@ public:
             glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            for (int i = 0; i < N; ++i)
-            {
-                for (int j = 0; j < N; ++j)
-                {
-                    if ((i + j) % 2)
-                        angle = -angle;
-                    auto modelMatrix = Xyz::translate4(float(i + (1 - N) / 2.0f),
-                                                       0.0f,
-                                                       float((1 - N) / 2.0 + j))
-                                       * Xyz::rotate_z<float>(angle + i * N + j)
-                                       * Xyz::scale4<float>(0.25, 0.25, 0.25);
-                    auto mat = viewMat * modelMatrix;
-                    program_.model_view_projection_matrix.set(mat);
-                    program_.model_matrix.set(modelMatrix);
+            auto scale = 0.5f + 2.0f * foo_.value(SDL_GetTicks());
+            auto modelMatrix = Xyz::rotate_z(angle)
+                               * Xyz::scale4(scale, scale, scale);
+            auto mat = view_mat * modelMatrix;
+            program_.model_view_projection_matrix.set(mat);
+            program_.model_matrix.set(modelMatrix);
 
-                    // Draw a triangle from the 3 vertices
-                    glDrawElements(GL_TRIANGLES, element_count_, GL_UNSIGNED_SHORT, nullptr);
-                }
-            }
+            // Draw a triangle from the 3 vertices
+            glDrawElements(GL_TRIANGLES, element_count_, GL_UNSIGNED_SHORT, nullptr);
         }
         catch (Tungsten::TungstenException& ex)
         {
@@ -115,6 +141,7 @@ private:
     Tungsten::VertexArrayHandle vertex_array_;
     SpaceBarsShaderProgram program_;
     GLsizei element_count_ = 0;
+    Foo foo_;
 };
 
 int main(int argc, char* argv[])
