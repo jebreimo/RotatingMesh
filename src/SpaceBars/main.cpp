@@ -9,18 +9,19 @@ struct Point
     Xyz::Vector3F color;
 };
 
-void add_face(Tungsten::ArrayBuffer<Point>& buffer,
-              const Xyz::Vector3F& major,
-              const Xyz::Vector3F& minor,
-              const Xyz::Vector3F& normal,
-              const Xyz::Vector3F& color)
+void add_rectangle(Tungsten::ArrayBuffer<Point>& buffer,
+                   const Xyz::Vector3F& origin,
+                   const Xyz::Vector3F& major,
+                   const Xyz::Vector3F& minor,
+                   const Xyz::Vector3F& color)
 {
+    auto normal = get_unit(cross(major, minor));
     Tungsten::ArrayBufferBuilder(buffer)
         .reserve_vertexes(4)
-        .add_vertex({-major - minor + normal, normal, color})
-        .add_vertex({major - minor + normal, normal, color})
-        .add_vertex({major + minor + normal, normal, color})
-        .add_vertex({-major + minor + normal, normal, color})
+        .add_vertex({origin, normal, color})
+        .add_vertex({origin + major, normal, color})
+        .add_vertex({origin + major + minor, normal, color})
+        .add_vertex({origin + minor, normal, color})
         .reserve_indexes(6)
         .add_indexes(0, 1, 3)
         .add_indexes(1, 2, 3);
@@ -28,13 +29,23 @@ void add_face(Tungsten::ArrayBuffer<Point>& buffer,
 
 void add_cube(Tungsten::ArrayBuffer<Point>& buffer)
 {
-    add_face(buffer, {1, 0, 0}, {0, 1, 0}, {0, 0, -1}, {0.4, 0.7, 0.9});
-    add_face(buffer, {0, 0, 1}, {0, 1, 0}, {1, 0, 0}, {0.7, 0.9, 0.4});
-    add_face(buffer, {-1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {0.9, 0.4, 0.7});
-    add_face(buffer, {0, 0, -1}, {0, 1, 0}, {-1, 0, 0}, {0.4, 0.9, 0.7});
-    add_face(buffer, {1, 0, 0}, {0, 0, 1}, {0, 1, 0}, {0.7, 0.4, 0.9});
-    add_face(buffer, {-1, 0, 0}, {0, 0, 1}, {0, -1, 0}, {0.9, 0.7, 0.4});
+    add_rectangle(buffer, {-1, -1, -1}, {2, 0, 0}, {0, 2, 0}, {1, 1, 1});
+    add_rectangle(buffer, {1, -1, -1}, {0, 0, 2}, {0, 2, 0}, {1, 1, 1});
+    add_rectangle(buffer, {1, -1, 1}, {-2, 0, 0}, {0, 2, 0}, {1, 1, 1});
+    add_rectangle(buffer, {-1, -1, 1}, {0, 0, -2}, {0, 2, 0}, {1, 1, 1});
+    add_rectangle(buffer, {-1, 1, -1}, {2, 0, 0}, {0, 0, 2}, {1, 1, 1});
+    add_rectangle(buffer, {-1, -1, 1}, {2, 0, 0}, {0, 0, -2}, {1, 1, 1});
 }
+
+//void add_cube(Tungsten::ArrayBuffer<Point>& buffer)
+//{
+//    add_rectangle(buffer, {-1, -1, -1}, {2, 0, 0}, {0, 2, 0}, {0.4, 0.7, 0.9});
+//    add_rectangle(buffer, {1, -1, -1}, {0, 0, 2}, {0, 2, 0}, {0.7, 0.9, 0.4});
+//    add_rectangle(buffer, {1, -1, 1}, {-2, 0, 0}, {0, 2, 0}, {0.9, 0.4, 0.7});
+//    add_rectangle(buffer, {-1, -1, 1}, {0, 0, -2}, {0, 2, 0}, {0.4, 0.9, 0.7});
+//    add_rectangle(buffer, {-1, 1, -1}, {2, 0, 0}, {0, 0, 2}, {0.7, 0.4, 0.9});
+//    add_rectangle(buffer, {-1, -1, 1}, {2, 0, 0}, {0, 0, -2}, {0.9, 0.7, 0.4});
+//}
 
 struct Foo
 {

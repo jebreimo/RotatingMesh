@@ -23,12 +23,14 @@ void SpaceBarsShaderProgram::setup()
     Tungsten::link_program(program);
     Tungsten::use_program(program);
 
-    position_attribute = Tungsten::get_vertex_attribute(program, "position");
-    normal_attribute = Tungsten::get_vertex_attribute(program, "normal");
-    color_attribute = Tungsten::get_vertex_attribute(program, "color");
+    position_attribute = Tungsten::get_vertex_attribute(program, "a_position");
+    normal_attribute = Tungsten::get_vertex_attribute(program, "a_normal");
+    color_attribute = Tungsten::get_vertex_attribute(program, "a_color");
 
     model_view_projection_matrix = Tungsten::get_uniform<Xyz::Matrix4F>(
-            program, "mvpMatrix");
+        program, "u_mvp_matrix");
     model_matrix = Tungsten::get_uniform<Xyz::Matrix4F>(
-            program, "mMatrix");
+        program, "u_matrix");
+    light_vector = Tungsten::get_uniform<Xyz::Vector3F>(
+        program, "u_light");
 }

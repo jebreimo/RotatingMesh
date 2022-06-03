@@ -1,19 +1,18 @@
 #version 410 core
 
-in vec3 position;
-in vec3 normal;
-in vec3 color;
+in vec3 a_position;
+in vec3 a_normal;
+in vec3 a_color;
 
-out vec3 vertexColor;
+out vec3 v_vertex_color;
 
-uniform mat4 mvpMatrix;
-uniform mat4 mMatrix;
-
-uniform vec3 light = vec3(-1 / sqrt(3), -1 / sqrt(3), 1 / sqrt(3));
+uniform mat4 u_mvp_matrix;
+uniform mat4 u_matrix;
+uniform vec3 u_light = vec3(1 / sqrt(3), 1 / sqrt(3), -1 / sqrt(3));
 
 void main()
 {
-    vec3 tmpNormal = normalize(mat3(mMatrix) * normal);
-    vertexColor = color * ((dot(tmpNormal, light) + 1) / 2);
-    gl_Position = mvpMatrix * vec4(position, 1.0);
+    vec3 normal = normalize(mat3(u_matrix) * a_normal);
+    v_vertex_color = a_color * ((dot(normal, u_light) + 1) / 2);
+    gl_Position = u_mvp_matrix * vec4(a_position, 1.0);
 }
