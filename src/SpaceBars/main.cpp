@@ -1,6 +1,7 @@
 #include <iostream>
 #include <Tungsten/Tungsten.hpp>
 #include "SpaceBarsShaderProgram.hpp"
+#include "Debug.hpp"
 
 struct Point
 {
@@ -9,43 +10,51 @@ struct Point
     Xyz::Vector3F color;
 };
 
-void add_rectangle(Tungsten::ArrayBuffer<Point>& buffer,
-                   const Xyz::Vector3F& origin,
-                   const Xyz::Vector3F& major,
-                   const Xyz::Vector3F& minor,
-                   const Xyz::Vector3F& color)
+Xyz::Mesh<float> make_cube_mesh()
 {
-    auto normal = get_unit(cross(major, minor));
-    Tungsten::ArrayBufferBuilder(buffer)
-        .reserve_vertexes(4)
-        .add_vertex({origin, normal, color})
-        .add_vertex({origin + major, normal, color})
-        .add_vertex({origin + major + minor, normal, color})
-        .add_vertex({origin + minor, normal, color})
-        .reserve_indexes(6)
-        .add_indexes(0, 1, 3)
-        .add_indexes(1, 2, 3);
+    return Xyz::Mesh<float>(
+        {
+            {-1, -1, -1},
+            {1, -1, -1},
+            {-1, -1, 1},
+            {1, -1, 1},
+            {1, 1, -1},
+            {-1, 1, -1},
+            {1, 1, 1},
+            {-1, 1, 1}},
+        {
+            {0, 1, 2},
+            {1, 3, 2},
+            {1, 4, 3},
+            {4, 6, 3},
+            {4, 5, 6},
+            {5, 7, 6},
+            {5, 0, 7},
+            {0, 2, 7},
+            {0, 5, 1},
+            {5, 4, 1},
+            {2, 3, 7},
+            {3, 6, 7}});
 }
 
-void add_cube(Tungsten::ArrayBuffer<Point>& buffer)
+void add_cube(Tungsten::ArrayBuffer<Point>& buffer,
+              Xyz::Mesh<float>& mesh)
 {
-    add_rectangle(buffer, {-1, -1, -1}, {2, 0, 0}, {0, 2, 0}, {1, 1, 1});
-    add_rectangle(buffer, {1, -1, -1}, {0, 0, 2}, {0, 2, 0}, {1, 1, 1});
-    add_rectangle(buffer, {1, -1, 1}, {-2, 0, 0}, {0, 2, 0}, {1, 1, 1});
-    add_rectangle(buffer, {-1, -1, 1}, {0, 0, -2}, {0, 2, 0}, {1, 1, 1});
-    add_rectangle(buffer, {-1, 1, -1}, {2, 0, 0}, {0, 0, 2}, {1, 1, 1});
-    add_rectangle(buffer, {-1, -1, 1}, {2, 0, 0}, {0, 0, -2}, {1, 1, 1});
+    Tungsten::ArrayBufferBuilder builder(buffer);
+    builder.reserve_vertexes(mesh.faces().size() * 3);
+    builder.reserve_indexes(mesh.faces().size() * 3);
+    int n = 0;
+    for (const auto& face : mesh.faces())
+    {
+        auto normal = mesh.normal(face);
+        JEB_SHOW(face.id(), face[0], face[1], face[2]);
+        builder.add_vertex({mesh.vertexes()[face[0]], normal, {1, 1, 1}});
+        builder.add_vertex({mesh.vertexes()[face[1]], normal, {1, 1, 1}});
+        builder.add_vertex({mesh.vertexes()[face[2]], normal, {1, 1, 1}});
+        builder.add_indexes(n, n + 1, n + 2);
+        n += 3;
+    }
 }
-
-//void add_cube(Tungsten::ArrayBuffer<Point>& buffer)
-//{
-//    add_rectangle(buffer, {-1, -1, -1}, {2, 0, 0}, {0, 2, 0}, {0.4, 0.7, 0.9});
-//    add_rectangle(buffer, {1, -1, -1}, {0, 0, 2}, {0, 2, 0}, {0.7, 0.9, 0.4});
-//    add_rectangle(buffer, {1, -1, 1}, {-2, 0, 0}, {0, 2, 0}, {0.9, 0.4, 0.7});
-//    add_rectangle(buffer, {-1, -1, 1}, {0, 0, -2}, {0, 2, 0}, {0.4, 0.9, 0.7});
-//    add_rectangle(buffer, {-1, 1, -1}, {2, 0, 0}, {0, 0, 2}, {0.7, 0.4, 0.9});
-//    add_rectangle(buffer, {-1, -1, 1}, {2, 0, 0}, {0, 0, -2}, {0.9, 0.7, 0.4});
-//}
 
 struct Foo
 {
@@ -67,8 +76,9 @@ class SpaceBarLoop : public Tungsten::EventLoop
 public:
     void on_startup(Tungsten::SdlApplication& app) override
     {
+        auto mesh = make_cube_mesh();
         Tungsten::ArrayBuffer<Point> buffer;
-        add_cube(buffer);
+        add_cube(buffer, mesh);
 
         vertex_array_ = Tungsten::generate_vertex_array();
         Tungsten::bind_vertex_array(vertex_array_);

@@ -1,11 +1,22 @@
 cmake_minimum_required(VERSION 3.22)
 project(SpaceBars)
 
+if (DEFINED LOCAL_SOURCE_PACKAGE_DIR OR DEFINED ENV{LOCAL_SOURCE_PACKAGE_DIR})
+    if (NOT LOCAL_SOURCE_PACKAGE_DIR)
+        set(LOCAL_SOURCE_PACKAGE_DIR $ENV{LOCAL_SOURCE_PACKAGE_DIR})
+    endif ()
+endif ()
+
 include(FetchContent)
 
-FetchContent_Declare(tungsten
-    GIT_REPOSITORY "https://github.com/jebreimo/Tungsten.git"
-    GIT_TAG master)
+if (DEFINED LOCAL_SOURCE_PACKAGE_DIR)
+    FetchContent_Declare(tungsten
+        URL "file://${LOCAL_SOURCE_PACKAGE_DIR}/Tungsten-0.2.7.tar.gz")
+else ()
+    FetchContent_Declare(tungsten
+        GIT_REPOSITORY "https://github.com/jebreimo/Tungsten.git"
+        GIT_TAG v0.2.7)
+endif ()
 
 FetchContent_MakeAvailable(tungsten)
 

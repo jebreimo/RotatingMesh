@@ -8,7 +8,7 @@ out vec3 v_vertex_color;
 
 uniform mat4 u_mvp_matrix;
 uniform mat4 u_matrix;
-uniform vec3 u_light = vec3(1 / sqrt(3), 1 / sqrt(3), -1 / sqrt(3));
+uniform vec3 u_light = vec3(-1 / sqrt(3), -1 / sqrt(3), 1 / sqrt(3));
 
 void main()
 {
