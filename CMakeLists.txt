@@ -11,14 +11,17 @@ include(FetchContent)
 
 if (DEFINED LOCAL_SOURCE_PACKAGE_DIR)
     FetchContent_Declare(tungsten
-        URL "file://${LOCAL_SOURCE_PACKAGE_DIR}/Tungsten-0.2.7.tar.gz")
+        URL "file://${LOCAL_SOURCE_PACKAGE_DIR}/Tungsten-0.2.68.tar.gz")
+    FetchContent_Declare(xyz
+        URL "file://${LOCAL_SOURCE_PACKAGE_DIR}/Xyz-0.2.70.tar.gz")
+    FetchContent_MakeAvailable(tungsten xyz)
 else ()
     FetchContent_Declare(tungsten
         GIT_REPOSITORY "https://github.com/jebreimo/Tungsten.git"
-        GIT_TAG v0.2.7)
+        GIT_TAG v0.2.68)
+    FetchContent_MakeAvailable(tungsten)
 endif ()
 
-FetchContent_MakeAvailable(tungsten)
 
 list(APPEND CMAKE_MODULE_PATH ${tungsten_SOURCE_DIR}/tools/cmake)
 

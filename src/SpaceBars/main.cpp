@@ -15,29 +15,29 @@ Xyz::Mesh<float> make_cube_mesh()
     return Xyz::Mesh<float>(
         {
             {-1, -1, -1},
-            {1, -1, -1},
             {-1, -1, 1},
+            {1, -1, -1},
             {1, -1, 1},
             {1, 1, -1},
-            {-1, 1, -1},
             {1, 1, 1},
+            {-1, 1, -1},
             {-1, 1, 1}},
         {
-            {0, 1, 2},
-            {1, 3, 2},
-            {1, 4, 3},
-            {4, 6, 3},
-            {4, 5, 6},
-            {5, 7, 6},
-            {5, 0, 7},
-            {0, 2, 7},
-            {0, 5, 1},
-            {5, 4, 1},
-            {2, 3, 7},
-            {3, 6, 7}});
+            {0, 2, 1},
+            {2, 3, 1},
+            {2, 4, 3},
+            {4, 5, 3},
+            {4, 6, 5},
+            {6, 7, 5},
+            {6, 0, 7},
+            {0, 1, 7},
+            {0, 6, 2},
+            {6, 4, 2},
+            {1, 3, 7},
+            {3, 5, 7}});
 }
 
-void add_cube(Tungsten::ArrayBuffer<Point>& buffer,
+void add_mesh(Tungsten::ArrayBuffer<Point>& buffer,
               Xyz::Mesh<float>& mesh)
 {
     Tungsten::ArrayBufferBuilder builder(buffer);
@@ -47,7 +47,6 @@ void add_cube(Tungsten::ArrayBuffer<Point>& buffer,
     for (const auto& face : mesh.faces())
     {
         auto normal = mesh.normal(face);
-        JEB_SHOW(face.id(), face[0], face[1], face[2]);
         builder.add_vertex({mesh.vertexes()[face[0]], normal, {1, 1, 1}});
         builder.add_vertex({mesh.vertexes()[face[1]], normal, {1, 1, 1}});
         builder.add_vertex({mesh.vertexes()[face[2]], normal, {1, 1, 1}});
@@ -76,15 +75,16 @@ class SpaceBarLoop : public Tungsten::EventLoop
 public:
     void on_startup(Tungsten::SdlApplication& app) override
     {
-        auto mesh = make_cube_mesh();
+        mesh_ = make_cube_mesh();
         Tungsten::ArrayBuffer<Point> buffer;
-        add_cube(buffer, mesh);
+        add_mesh(buffer, mesh_);
 
         vertex_array_ = Tungsten::generate_vertex_array();
         Tungsten::bind_vertex_array(vertex_array_);
 
         buffers_ = Tungsten::generate_buffers(2);
-        Tungsten::set_buffers(buffers_[0], buffers_[1], buffer);
+        Tungsten::set_buffers(buffers_[0], buffers_[1], buffer,
+                              GL_DYNAMIC_DRAW);
         element_count_ = GLsizei(buffer.indexes.size());
         program_.setup();
 
@@ -126,6 +126,16 @@ public:
         return EventLoop::on_event(app, event);
     }
 
+    void on_update(Tungsten::SdlApplication& app) override
+    {
+        auto value = foo_.value(SDL_GetTicks());
+        if (value == prev_value_)
+            return;
+
+        mesh_.set_vertex(0, {-1 + value, -1 + value, -1 + value});
+        update_buffer_ = true;
+    }
+
     void on_draw(Tungsten::SdlApplication& app) override
     {
         auto view_mat = Xyz::scale4<float>(1.0f, app.aspect_ratio(), 1.0f)
@@ -138,6 +148,15 @@ public:
 
         try
         {
+            if (update_buffer_)
+            {
+                Tungsten::ArrayBuffer<Point> buffer;
+                add_mesh(buffer, mesh_);
+                auto [v_buf, v_size] = buffer.array_buffer();
+                Tungsten::set_buffer_subdata(GL_ARRAY_BUFFER, 0,
+                                             GLuint(v_size), v_buf);
+                update_buffer_ = false;
+            }
             glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -162,7 +181,10 @@ private:
     Tungsten::VertexArrayHandle vertex_array_;
     SpaceBarsShaderProgram program_;
     GLsizei element_count_ = 0;
+    Xyz::Mesh<float> mesh_;
+    bool update_buffer_ = false;
     Foo foo_;
+    float prev_value_ = 0;
 };
 
 int main(int argc, char* argv[])
