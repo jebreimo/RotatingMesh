@@ -33,7 +33,7 @@ add_executable(SpaceBars
     src/SpaceBars/main.cpp
     src/SpaceBars/SpaceBarsShaderProgram.cpp
     src/SpaceBars/SpaceBarsShaderProgram.hpp
-    )
+    src/SpaceBars/Animate.cpp src/SpaceBars/Animate.hpp)
 
 target_link_libraries(SpaceBars
     PRIVATE

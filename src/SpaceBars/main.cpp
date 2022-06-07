@@ -10,6 +10,72 @@ struct Point
     Xyz::Vector3F color;
 };
 
+std::vector<Xyz::Vector2F> make_polygon(unsigned n)
+{
+    constexpr auto PI = Xyz::Constants<float>::PI;
+    std::vector<Xyz::Vector2F> result;
+    auto angle0 = 1.5f * PI - PI / float(n);
+    for (unsigned i = 0; i < n; ++i)
+    {
+        auto angle = angle0 + float(i) * 2 * PI / float(n);
+        result.push_back({cos(angle), sin(angle)});
+    }
+    return result;
+}
+
+std::vector<Xyz::Vector2F> make_transition_polygon(unsigned n, float fraction)
+{
+    if (fraction <= 0)
+        return make_polygon(n);
+    if (fraction >= 1)
+        return make_polygon(n + 1);
+    const auto points0 = make_polygon(n);
+    const auto points1 = make_polygon(n + 1);
+    std::vector<Xyz::Vector2F> result;
+    for (unsigned i = 0; i < n; ++i)
+        result.push_back(points0[i] + (points1[i] - points0[i]) * fraction);
+    result.push_back(points0[0] + (points1.back() - points0[0]) * fraction);
+    return result;
+}
+
+Xyz::Mesh<float> make_polygon_mesh(unsigned n, float fraction)
+{
+    const auto RADIUS = sqrt(2.0f);
+    auto points = make_transition_polygon(n, fraction);
+    Xyz::Mesh<float> mesh;
+    for (auto p : points)
+    {
+        p *= RADIUS;
+        mesh.add_vertex({p[0], p[1], -1});
+        mesh.add_vertex({p[0], p[1], 1});
+    }
+    if (fraction > 0)
+        n += 1;
+    for (unsigned i = 0; i < n - 1; ++i)
+    {
+        auto j = i * 2;
+        mesh.add_face({j, j + 2, j + 1});
+        mesh.add_face({j + 2, j + 3, j + 1});
+    }
+    auto bottom_center = uint32_t(mesh.vertexes().size());
+    mesh.add_vertex({0, 0, -1});
+    auto top_center = uint32_t(mesh.vertexes().size());
+    mesh.add_vertex({0, 0, 1});
+    mesh.add_face({2 * n - 2, 0, 2 * n - 1});
+    mesh.add_face({0, 1, 2 * n - 1});
+    for (unsigned i = 0; i < n - 1; ++i)
+    {
+        auto j = i * 2;
+        mesh.add_face({j + 1, j + 3, top_center});
+        mesh.add_face({j + 2, j, bottom_center});
+    }
+
+    mesh.add_face({2 * n - 1, 1, top_center});
+    mesh.add_face({0, 2 * n - 2, bottom_center});
+
+    return mesh;
+}
+
 Xyz::Mesh<float> make_cube_mesh()
 {
     return Xyz::Mesh<float>(
@@ -75,7 +141,7 @@ class SpaceBarLoop : public Tungsten::EventLoop
 public:
     void on_startup(Tungsten::SdlApplication& app) override
     {
-        mesh_ = make_cube_mesh();
+        mesh_ = make_polygon_mesh(3, 0.8);
         Tungsten::ArrayBuffer<Point> buffer;
         add_mesh(buffer, mesh_);
 
@@ -126,15 +192,17 @@ public:
         return EventLoop::on_event(app, event);
     }
 
-    void on_update(Tungsten::SdlApplication& app) override
-    {
-        auto value = foo_.value(SDL_GetTicks());
-        if (value == prev_value_)
-            return;
-
-        mesh_.set_vertex(0, {-1 + value, -1 + value, -1 + value});
-        update_buffer_ = true;
-    }
+    //void on_update(Tungsten::SdlApplication& app) override
+    //{
+    //    auto value = foo_.value(SDL_GetTicks());
+    //    if (value == prev_value_)
+    //        return;
+    //
+    //    auto y = -1 - value * (sqrt(2.0f) - 1);
+    //    mesh_.set_vertex(0, {-1 + value, y, -1});
+    //    mesh_.set_vertex(1, {-1 + value, y, 1});
+    //    update_buffer_ = true;
+    //}
 
     void on_draw(Tungsten::SdlApplication& app) override
     {
@@ -160,9 +228,9 @@ public:
             glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            auto scale = 0.5f + 2.0f * foo_.value(SDL_GetTicks());
-            auto modelMatrix = Xyz::rotate_z(angle)
-                               * Xyz::scale4(scale, scale, scale);
+            //auto scale = 0.5f + 2.0f * foo_.value(SDL_GetTicks());
+            auto modelMatrix = Xyz::rotate_z(angle);
+                               //* Xyz::scale4(scale, scale, scale);
             auto mat = view_mat * modelMatrix;
             program_.model_view_projection_matrix.set(mat);
             program_.model_matrix.set(modelMatrix);
@@ -191,7 +259,7 @@ int main(int argc, char* argv[])
 {
     try
     {
-        Tungsten::SdlApplication app("PolygonFountain",
+        Tungsten::SdlApplication app("SpaceBars",
                                      std::make_unique<SpaceBarLoop>());
         app.parse_command_line_options(argc, argv);
         app.run();
