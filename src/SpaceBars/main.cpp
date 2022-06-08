@@ -123,16 +123,18 @@ void add_mesh(Tungsten::ArrayBuffer<Point>& buffer,
 
 struct Foo
 {
-    uint32_t timestamp = 0;
-    float base = 0;
+    uint32_t start_timestamp = 0;
+    float start_value = 0;
+    float end_value = 1.0;
     float factor = 0;
 
     [[nodiscard]]
     constexpr float value(uint32_t timestamp) const
     {
-        auto delta = float(timestamp - this->timestamp);
-        auto value = delta * factor + base;
-        return std::max(0.0f, std::min(1.0f, value));
+        auto delta = float(timestamp - this->start_timestamp);
+        auto value = delta * factor + start_value;
+        return Xyz::clamp(value, std::min(start_value, end_value),
+                          std::max(start_value, end_value));
     }
 };
 
@@ -141,7 +143,7 @@ class SpaceBarLoop : public Tungsten::EventLoop
 public:
     void on_startup(Tungsten::SdlApplication& app) override
     {
-        mesh_ = make_polygon_mesh(3, 0.8);
+        mesh_ = make_polygon_mesh(10, 0);
         Tungsten::ArrayBuffer<Point> buffer;
         add_mesh(buffer, mesh_);
 
@@ -180,29 +182,31 @@ public:
         {
             foo_ = {event.key.timestamp,
                     foo_.value(event.key.timestamp),
-                    0.0002f};
+                    3,
+                    -0.0005f};
         }
         else if (event.type == SDL_KEYUP)
         {
             foo_ = {event.key.timestamp,
                     foo_.value(event.key.timestamp),
-                    -0.0006f};
+                    10,
+                    0.0006f};
         }
 
         return EventLoop::on_event(app, event);
     }
 
-    //void on_update(Tungsten::SdlApplication& app) override
-    //{
-    //    auto value = foo_.value(SDL_GetTicks());
-    //    if (value == prev_value_)
-    //        return;
-    //
-    //    auto y = -1 - value * (sqrt(2.0f) - 1);
-    //    mesh_.set_vertex(0, {-1 + value, y, -1});
-    //    mesh_.set_vertex(1, {-1 + value, y, 1});
-    //    update_buffer_ = true;
-    //}
+    void on_update(Tungsten::SdlApplication& app) override
+    {
+        auto value = foo_.value(SDL_GetTicks());
+        if (value == prev_value_)
+            return;
+
+        float int_part;
+        float fraction = modf(value, &int_part);
+        mesh_ = make_polygon_mesh(unsigned(int_part), fraction);
+        update_buffer_ = true;
+    }
 
     void on_draw(Tungsten::SdlApplication& app) override
     {
@@ -220,9 +224,14 @@ public:
             {
                 Tungsten::ArrayBuffer<Point> buffer;
                 add_mesh(buffer, mesh_);
+
                 auto [v_buf, v_size] = buffer.array_buffer();
                 Tungsten::set_buffer_subdata(GL_ARRAY_BUFFER, 0,
-                                             GLuint(v_size), v_buf);
+                                             GLsizeiptr(v_size), v_buf);
+                auto [i_buf, i_size] = buffer.index_buffer();
+                Tungsten::set_buffer_subdata(GL_ELEMENT_ARRAY_BUFFER, 0,
+                                             GLsizeiptr(i_size), i_buf);
+                element_count_ = GLsizei(buffer.indexes.size());
                 update_buffer_ = false;
             }
             glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -251,8 +260,8 @@ private:
     GLsizei element_count_ = 0;
     Xyz::Mesh<float> mesh_;
     bool update_buffer_ = false;
-    Foo foo_;
-    float prev_value_ = 0;
+    Foo foo_ = {0, 10, 3, 0};
+    float prev_value_ = 10;
 };
 
 int main(int argc, char* argv[])
@@ -262,6 +271,9 @@ int main(int argc, char* argv[])
         Tungsten::SdlApplication app("SpaceBars",
                                      std::make_unique<SpaceBarLoop>());
         app.parse_command_line_options(argc, argv);
+        auto params = app.window_parameters();
+        params.gl_parameters.multi_sampling = {1, 2};
+        app.set_window_parameters(params);
         app.run();
     }
     catch (std::exception& ex)
