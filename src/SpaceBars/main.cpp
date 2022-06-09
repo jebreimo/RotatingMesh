@@ -175,6 +175,14 @@ public:
     {
         if (event.type != SDL_KEYDOWN && event.type != SDL_KEYUP)
             return false;
+
+        if (event.type == SDL_KEYUP && event.key.keysym.sym == SDLK_p)
+        {
+            draw_wireframe_ = !draw_wireframe_;
+            glPolygonMode(GL_FRONT_AND_BACK, draw_wireframe_ ? GL_LINE : GL_FILL);
+            return true;
+        }
+
         if (event.key.keysym.sym != SDLK_SPACE)
             return false;
 
@@ -193,7 +201,7 @@ public:
                     0.0006f};
         }
 
-        return EventLoop::on_event(app, event);
+        return true;
     }
 
     void on_update(Tungsten::SdlApplication& app) override
@@ -216,8 +224,6 @@ public:
                                                    Xyz::make_vector3<float>(0, 0, 0),
                                                    Xyz::make_vector3<float>(0, 0, 1));
 
-        auto angle = Xyz::to_radians(float(SDL_GetTicks() / 10.0));
-
         try
         {
             if (update_buffer_)
@@ -237,6 +243,7 @@ public:
             glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+            auto angle = Xyz::to_radians(float(SDL_GetTicks() / 50.0));
             //auto scale = 0.5f + 2.0f * foo_.value(SDL_GetTicks());
             auto modelMatrix = Xyz::rotate_z(angle);
                                //* Xyz::scale4(scale, scale, scale);
@@ -262,6 +269,7 @@ private:
     bool update_buffer_ = false;
     Foo foo_ = {0, 10, 3, 0};
     float prev_value_ = 10;
+    bool draw_wireframe_ = false;
 };
 
 int main(int argc, char* argv[])
