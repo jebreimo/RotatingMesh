@@ -1,7 +1,6 @@
 #include <iostream>
 #include <Tungsten/Tungsten.hpp>
-#include "GouraudShaderProgram.hpp"
-#include "Debug.hpp"
+#include "PhongShaderProgram.hpp"
 
 struct Point
 {
@@ -228,7 +227,7 @@ public:
 private:
     std::vector<Tungsten::BufferHandle> buffers_;
     Tungsten::VertexArrayHandle vertex_array_;
-    GouraudShaderProgram program_;
+    PhongShaderProgram program_;
     GLsizei element_count_ = 0;
     Xyz::Mesh<float> mesh_;
     bool update_buffer_ = false;

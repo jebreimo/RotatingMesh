@@ -31,10 +31,13 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_executable(RotatingMesh
     src/RotatingMesh/main.cpp
+    src/RotatingMesh/GouraudShaderProgram.cpp
+    src/RotatingMesh/GouraudShaderProgram.hpp
+    src/RotatingMesh/PhongShaderProgram.cpp
+    src/RotatingMesh/PhongShaderProgram.hpp
     src/RotatingMesh/RotatingMeshShaderProgram.cpp
     src/RotatingMesh/RotatingMeshShaderProgram.hpp
-    src/RotatingMesh/GouraudShaderProgram.cpp
-    src/RotatingMesh/GouraudShaderProgram.hpp)
+    )
 
 target_link_libraries(RotatingMesh
     PRIVATE
@@ -45,6 +48,8 @@ tungsten_target_embed_shaders(RotatingMesh
     FILES
         src/RotatingMesh/Gouraud-frag.glsl
         src/RotatingMesh/Gouraud-vert.glsl
+        src/RotatingMesh/Phong-frag.glsl
+        src/RotatingMesh/Phong-vert.glsl
         src/RotatingMesh/RotatingMesh-frag.glsl
         src/RotatingMesh/RotatingMesh-vert.glsl
     )
