@@ -1,6 +1,6 @@
 #include <iostream>
 #include <Tungsten/Tungsten.hpp>
-#include "RotatingMeshShaderProgram.hpp"
+#include "GouraudShaderProgram.hpp"
 #include "Debug.hpp"
 
 struct Point
@@ -129,11 +129,11 @@ public:
         program_.setup();
 
         GLsizei row_size = sizeof(Point);
-        Tungsten::enable_vertex_attribute(program_.position_attribute);
-        Tungsten::define_vertex_attribute_pointer(program_.position_attribute, 3,
+        Tungsten::enable_vertex_attribute(program_.position_attr);
+        Tungsten::define_vertex_attribute_pointer(program_.position_attr, 3,
                                                   GL_FLOAT, false, row_size, 0);
-        Tungsten::enable_vertex_attribute(program_.normal_attribute);
-        Tungsten::define_vertex_attribute_pointer(program_.normal_attribute, 3,
+        Tungsten::enable_vertex_attribute(program_.normal_attr);
+        Tungsten::define_vertex_attribute_pointer(program_.normal_attr, 3,
                                                   GL_FLOAT, false, row_size, 3 * sizeof(GLfloat));
 
         auto proj_mat = Xyz::scale4<float>(1.0f, app.aspect_ratio(), 1.0f)
@@ -228,7 +228,7 @@ public:
 private:
     std::vector<Tungsten::BufferHandle> buffers_;
     Tungsten::VertexArrayHandle vertex_array_;
-    RotatingMeshShaderProgram program_;
+    GouraudShaderProgram program_;
     GLsizei element_count_ = 0;
     Xyz::Mesh<float> mesh_;
     bool update_buffer_ = false;

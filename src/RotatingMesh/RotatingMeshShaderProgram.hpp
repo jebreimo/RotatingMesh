@@ -19,6 +19,6 @@ public:
     Tungsten::Uniform<Xyz::Matrix4F> proj_matrix;
     Tungsten::Uniform<Xyz::Vector3F> light_vector;
 
-    GLuint position_attribute;
-    GLuint normal_attribute;
+    GLuint position_attr;
+    GLuint normal_attr;
 };

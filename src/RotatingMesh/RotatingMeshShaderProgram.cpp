@@ -23,8 +23,8 @@ void RotatingMeshShaderProgram::setup()
     Tungsten::link_program(program);
     Tungsten::use_program(program);
 
-    position_attribute = Tungsten::get_vertex_attribute(program, "a_position");
-    normal_attribute = Tungsten::get_vertex_attribute(program, "a_normal");
+    position_attr = Tungsten::get_vertex_attribute(program, "a_position");
+    normal_attr = Tungsten::get_vertex_attribute(program, "a_normal");
 
     mv_matrix = Tungsten::get_uniform<Xyz::Matrix4F>(
         program, "u_mv_matrix");
