@@ -8,18 +8,17 @@
 #pragma once
 #include <Tungsten/Tungsten.hpp>
 
-class SpaceBarsShaderProgram
+class RotatingMeshShaderProgram
 {
 public:
     void setup();
 
     Tungsten::ProgramHandle program;
 
-    Tungsten::Uniform<Xyz::Matrix4F> model_view_projection_matrix;
-    Tungsten::Uniform<Xyz::Matrix4F> model_matrix;
+    Tungsten::Uniform<Xyz::Matrix4F> mv_matrix;
+    Tungsten::Uniform<Xyz::Matrix4F> proj_matrix;
     Tungsten::Uniform<Xyz::Vector3F> light_vector;
 
     GLuint position_attribute;
     GLuint normal_attribute;
-    GLuint color_attribute;
 };

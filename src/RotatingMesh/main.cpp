@@ -1,13 +1,12 @@
 #include <iostream>
 #include <Tungsten/Tungsten.hpp>
-#include "SpaceBarsShaderProgram.hpp"
+#include "RotatingMeshShaderProgram.hpp"
 #include "Debug.hpp"
 
 struct Point
 {
     Xyz::Vector3F coords;
     Xyz::Vector3F normal;
-    Xyz::Vector3F color;
 };
 
 std::vector<Xyz::Vector2F> make_polygon(unsigned n)
@@ -76,33 +75,6 @@ Xyz::Mesh<float> make_polygon_mesh(unsigned n, float fraction)
     return mesh;
 }
 
-Xyz::Mesh<float> make_cube_mesh()
-{
-    return Xyz::Mesh<float>(
-        {
-            {-1, -1, -1},
-            {-1, -1, 1},
-            {1, -1, -1},
-            {1, -1, 1},
-            {1, 1, -1},
-            {1, 1, 1},
-            {-1, 1, -1},
-            {-1, 1, 1}},
-        {
-            {0, 2, 1},
-            {2, 3, 1},
-            {2, 4, 3},
-            {4, 5, 3},
-            {4, 6, 5},
-            {6, 7, 5},
-            {6, 0, 7},
-            {0, 1, 7},
-            {0, 6, 2},
-            {6, 4, 2},
-            {1, 3, 7},
-            {3, 5, 7}});
-}
-
 void add_mesh(Tungsten::ArrayBuffer<Point>& buffer,
               Xyz::Mesh<float>& mesh)
 {
@@ -113,9 +85,9 @@ void add_mesh(Tungsten::ArrayBuffer<Point>& buffer,
     for (const auto& face : mesh.faces())
     {
         auto normal = mesh.normal(face);
-        builder.add_vertex({mesh.vertexes()[face[0]], normal, {1, 1, 1}});
-        builder.add_vertex({mesh.vertexes()[face[1]], normal, {1, 1, 1}});
-        builder.add_vertex({mesh.vertexes()[face[2]], normal, {1, 1, 1}});
+        builder.add_vertex({mesh.vertexes()[face[0]], normal});
+        builder.add_vertex({mesh.vertexes()[face[1]], normal});
+        builder.add_vertex({mesh.vertexes()[face[2]], normal});
         builder.add_indexes(n, n + 1, n + 2);
         n += 3;
     }
@@ -138,7 +110,7 @@ struct Foo
     }
 };
 
-class SpaceBarLoop : public Tungsten::EventLoop
+class RotatingMeshLoop : public Tungsten::EventLoop
 {
 public:
     void on_startup(Tungsten::SdlApplication& app) override
@@ -163,9 +135,13 @@ public:
         Tungsten::enable_vertex_attribute(program_.normal_attribute);
         Tungsten::define_vertex_attribute_pointer(program_.normal_attribute, 3,
                                                   GL_FLOAT, false, row_size, 3 * sizeof(GLfloat));
-        Tungsten::enable_vertex_attribute(program_.color_attribute);
-        Tungsten::define_vertex_attribute_pointer(program_.color_attribute, 3,
-                                                  GL_FLOAT, false, row_size, 6 * sizeof(GLfloat));
+
+        auto proj_mat = Xyz::scale4<float>(1.0f, app.aspect_ratio(), 1.0f)
+                        * Xyz::make_frustum_matrix<float>(-2, 2, -2, 2, 2, 20)
+                        * Xyz::make_look_at_matrix(Xyz::make_vector3<float>(-4, -4, 2.5),
+                                                   Xyz::make_vector3<float>(0, 0, 0),
+                                                   Xyz::make_vector3<float>(0, 0, 1));
+        program_.proj_matrix.set(proj_mat);
 
         app.set_swap_interval(1);
         glEnable(GL_DEPTH_TEST);
@@ -218,12 +194,6 @@ public:
 
     void on_draw(Tungsten::SdlApplication& app) override
     {
-        auto view_mat = Xyz::scale4<float>(1.0f, app.aspect_ratio(), 1.0f)
-                        * Xyz::make_frustum_matrix<float>(-2, 2, -2, 2, 2, 20)
-                        * Xyz::make_look_at_matrix(Xyz::make_vector3<float>(-4, -4, 2.5),
-                                                   Xyz::make_vector3<float>(0, 0, 0),
-                                                   Xyz::make_vector3<float>(0, 0, 1));
-
         try
         {
             if (update_buffer_)
@@ -244,14 +214,9 @@ public:
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             auto angle = Xyz::to_radians(float(SDL_GetTicks() / 50.0));
-            //auto scale = 0.5f + 2.0f * foo_.value(SDL_GetTicks());
-            auto modelMatrix = Xyz::rotate_z(angle);
-                               //* Xyz::scale4(scale, scale, scale);
-            auto mat = view_mat * modelMatrix;
-            program_.model_view_projection_matrix.set(mat);
-            program_.model_matrix.set(modelMatrix);
+            auto model_mat = Xyz::rotate_z(angle);
+            program_.mv_matrix.set(model_mat);
 
-            // Draw a triangle from the 3 vertices
             glDrawElements(GL_TRIANGLES, element_count_, GL_UNSIGNED_SHORT, nullptr);
         }
         catch (Tungsten::TungstenException& ex)
@@ -263,7 +228,7 @@ public:
 private:
     std::vector<Tungsten::BufferHandle> buffers_;
     Tungsten::VertexArrayHandle vertex_array_;
-    SpaceBarsShaderProgram program_;
+    RotatingMeshShaderProgram program_;
     GLsizei element_count_ = 0;
     Xyz::Mesh<float> mesh_;
     bool update_buffer_ = false;
@@ -276,8 +241,8 @@ int main(int argc, char* argv[])
 {
     try
     {
-        Tungsten::SdlApplication app("SpaceBars",
-                                     std::make_unique<SpaceBarLoop>());
+        Tungsten::SdlApplication app("RotatingMesh",
+                                     std::make_unique<RotatingMeshLoop>());
         app.parse_command_line_options(argc, argv);
         auto params = app.window_parameters();
         params.gl_parameters.multi_sampling = {1, 2};

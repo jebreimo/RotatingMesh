@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(SpaceBars)
+project(RotatingMesh)
 
 if (DEFINED LOCAL_SOURCE_PACKAGE_DIR OR DEFINED ENV{LOCAL_SOURCE_PACKAGE_DIR})
     if (NOT LOCAL_SOURCE_PACKAGE_DIR)
@@ -29,19 +29,22 @@ include(TungstenTargetEmbedShaders)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(SpaceBars
-    src/SpaceBars/main.cpp
-    src/SpaceBars/SpaceBarsShaderProgram.cpp
-    src/SpaceBars/SpaceBarsShaderProgram.hpp
-    src/SpaceBars/Animate.cpp src/SpaceBars/Animate.hpp)
+add_executable(RotatingMesh
+    src/RotatingMesh/main.cpp
+    src/RotatingMesh/RotatingMeshShaderProgram.cpp
+    src/RotatingMesh/RotatingMeshShaderProgram.hpp
+    src/RotatingMesh/GouraudShaderProgram.cpp
+    src/RotatingMesh/GouraudShaderProgram.hpp)
 
-target_link_libraries(SpaceBars
+target_link_libraries(RotatingMesh
     PRIVATE
         Tungsten::Tungsten
     )
 
-tungsten_target_embed_shaders(SpaceBars
+tungsten_target_embed_shaders(RotatingMesh
     FILES
-        src/SpaceBars/SpaceBars-frag.glsl
-        src/SpaceBars/SpaceBars-vert.glsl
+        src/RotatingMesh/Gouraud-frag.glsl
+        src/RotatingMesh/Gouraud-vert.glsl
+        src/RotatingMesh/RotatingMesh-frag.glsl
+        src/RotatingMesh/RotatingMesh-vert.glsl
     )
